@@ -1,0 +1,1 @@
+Blockstack Collection Schemas

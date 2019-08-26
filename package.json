@@ -1,0 +1,33 @@
+{
+  "name": "blockstack-collection-schemas",
+  "version": "0.1.0",
+  "description": "Blockstack collection schemas",
+  "main": "lib/index",
+  "scripts": {
+    "build": "npm run build:node && npm run build:webpack",
+    "build:webpack": "shx rm -rf dist/* && cross-env NODE_ENV=production webpack --mode=production",
+    "build:webpack:watch": "shx rm -rf dist/* && cross-env NODE_ENV=development webpack --mode=development --watch --progress --info-verbosity verbose",
+    "build:node": "shx rm -rf lib && tsc",
+    "build:node:watch": "shx rm -rf lib && tsc --watch",
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/blockstack/blockstack-collection-schemas.git"
+  },
+  "author": "Ken Liao",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/blockstack/blockstack-collection-schemas/issues"
+  },
+  "homepage": "https://github.com/blockstack/blockstack-collection-schemas#readme",
+  "dependencies": {},
+  "devDependencies": {
+    "cross-env": "^5.2.0",
+    "shx": "^0.3.2",
+    "ts-loader": "^6.0.1",
+    "typescript": "^3.4.5",
+    "webpack": "^4.32.1",
+    "webpack-cli": "^3.3.2"
+  }
+}
