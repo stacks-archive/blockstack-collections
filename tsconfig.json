@@ -4,7 +4,8 @@
     "module": "commonjs",
     "noImplicitAny": false,
     "sourceMap": true,
-    "outDir": "lib"
+    "outDir": "lib",
+    "esModuleInterop": true
   },
   "include": [
     "src/**/*"

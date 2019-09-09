@@ -21,7 +21,9 @@
     "url": "https://github.com/blockstack/blockstack-collection-schemas/issues"
   },
   "homepage": "https://github.com/blockstack/blockstack-collection-schemas#readme",
-  "dependencies": {},
+  "dependencies": {
+    "blockstack": "^19.3.0"
+  },
   "devDependencies": {
     "cross-env": "^5.2.0",
     "shx": "^0.3.2",
