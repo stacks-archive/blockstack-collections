@@ -179,8 +179,8 @@ export abstract class Collection implements Serializable {
    * Stores the collection object to collection data store.
    * @param {UserSession} userSession? - Optional user session object
    * 
-   * @returns {Promise} that resolves if the operation succeed and rejects
-   * if it failed
+   * @returns {Promise} that resolves to the object identifier if the operation succeed 
+   * and rejects if it failed
    */
   async save(userSession?: UserSession) {
     userSession = userSession || new UserSession()
@@ -192,7 +192,9 @@ export abstract class Collection implements Serializable {
     let opt = {
       gaiaHubConfig: hubConfig
     }
-    return putFile(normalizedIdentifier, file, opt, userSession)
+    return putFile(normalizedIdentifier, file, opt, userSession).then(() => {
+      return identifier
+    })
   }
 
   /**
