@@ -53,7 +53,7 @@ export class Contact extends Collection implements Serializable {
   }
 
   async save(userSession?: UserSession) {
-    // Delete old file if object identifier changes
+    // Delete old file on save if object identifier changes
     return super.save(userSession)
       .then((result) => {
         if (this.identifierChanged) {
