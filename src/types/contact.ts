@@ -1,4 +1,5 @@
 import { Collection, Attrs, Serializable } from './collection'
+import { UserSession } from 'blockstack'
 
 export class Contact extends Collection implements Serializable {
 
@@ -6,12 +7,10 @@ export class Contact extends Collection implements Serializable {
     return 'contact'
   }
 
-  static schemaVersion = '1.0'
-
   static schema = {
-    schemaVersion: String,
     identifier: String,
-    name: String,
+    firstName: String,
+    lastName: String,
     blockstackID: String,
     email: String,
     website: String,
@@ -20,14 +19,6 @@ export class Contact extends Collection implements Serializable {
     organization: String
   }
 
-  constructor(attrs: Attrs = {}) {
-    super(attrs)
-  }
-
-  collectionName(): string {
-    return Contact.collectionName
-  }
-  
   static fromData(data: string) {
     return this.fromJSON(data)
   }
@@ -36,11 +27,52 @@ export class Contact extends Collection implements Serializable {
     return new Contact(JSON.parse(data))
   }
 
+  identifierChanged: boolean = false
+  previousIdentifier: string
+
+  constructor(attrs: Attrs = {}) {
+    super(attrs)
+  }
+
+  collectionName(): string {
+    return Contact.collectionName
+  }
+
+  constructIdentifier() {
+    // Create identifier based on first and last name
+    return `${this.attrs.firstName || ''} ${this.attrs.lastName || ''}`
+  }
+
   serialize() {
+    // Serialize to JSON
     return this.toJSON()
   }
 
   toJSON() {
     return JSON.stringify(this.attrs)
+  }
+
+  async save(userSession?: UserSession) {
+    // Delete old file if object identifier changes
+    return super.save(userSession)
+      .then((result) => {
+        if (this.identifierChanged) {
+          Contact.delete(this.previousIdentifier, userSession)
+        }
+        return result
+      })
+  }
+
+  onValueChange(key: string, value: any) {
+    if (key === 'firstName') {
+      this.previousIdentifier = this.attrs.identifier
+      this.attrs.identifier = this.constructIdentifier()
+      this.identifierChanged = true
+    }
+    else if (key === 'lastName') {
+      this.previousIdentifier = this.attrs.identifier
+      this.attrs.identifier = this.constructIdentifier()
+      this.identifierChanged = true
+    }
   }
 }

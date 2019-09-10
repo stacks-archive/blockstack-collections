@@ -7,6 +7,7 @@ import {
 } from 'blockstack'
 
 export const COLLECTION_GAIA_PREFIX = 'collection'
+export const COLLECTION_SCOPE_PREFIX = 'collection.'
 
 export interface SchemaAttribute {
   type: string | Record<string, any> | any[] | number | boolean;
@@ -28,9 +29,16 @@ export interface Serializable {
   serialize()
 }
 
-const COLLECTION_SCOPE_PREFIX = 'collection.'
-
 export abstract class Collection implements Serializable {
+
+  public attrs: Attrs
+  public schema: Schema
+
+  static schemaVersion = '1.0'
+
+  public static schema: Schema = {
+    identifier: String
+  }
 
   constructor(attrs: Attrs = {}) {
     const { schema } = this.constructor as typeof Collection
@@ -39,26 +47,77 @@ export abstract class Collection implements Serializable {
     this.attrs = {
       ...attrs
     };
+
+    this.defineDynamicGetterSetters(this.schema, this.attrs)
   }
 
-  public attrs: Attrs
+  /**
+   * Define the getter and setters for each attribute in the schema
+   */
+  defineDynamicGetterSetters(schema: Schema, attrs: Attrs = {}) {
+    for(let key in schema) {
+      Object.defineProperty(this, key, {
+        get: () => this.attrs[key],
+        set: (value:any) => {
+          if (this.attrs[key] !== value) {
+            this.attrs[key] = value
+            this.onValueChange(key, value)
+          }
+        }
+      })
+    }
+  }
 
+  /**
+   * Invoked when a property changes, subclass this to observe object property changes
+   */
+  protected onValueChange(key: string, value: any) {
+    return 
+  }
+
+  /**
+   * Returns the collection type name
+   * 
+   * @returns Returns the collection type name as a string
+   */
   static get collectionName(): string {
     throw new Error('Required abstract method collectionName was not implemented')
   }
 
+  /**
+   * Returns the collection scope string
+   * 
+   * @returns Returns the collection scope string
+   */
   static get scope() {
     return `${COLLECTION_SCOPE_PREFIX}${this.collectionName}`
   }
 
+  /**
+   * Returns the collection type name
+   * 
+   * @returns Returns the collection type name as a string
+   */
   public collectionName(): string {
     throw new Error('Required abstract method collectionName was not implemented')
   }
 
+  /**
+   * Returns an instance of the collection object created from input data
+   * 
+   * @returns Returns a collection object
+   */
   static fromData(data: string | ArrayBuffer) {
     throw new Error('Required abstract method fromData was not implemented')
   }
 
+  /**
+   * Retrieves a collection object from the collection data store
+   * @param {String} identifier - The identifier of the collection object to retrieve
+   * @param {UserSession} userSession? - Optional user session object
+   * 
+   * @returns {Promise} that resolves to the a collection obbject or rejects with an error
+   */
   static async get(identifier: string, userSession?: UserSession) {
     userSession = userSession || new UserSession()
     let hubConfig = await userSession.getCollectionGaiaHubConnection(this.collectionName)
@@ -76,14 +135,21 @@ export abstract class Collection implements Serializable {
       })
   }
 
-  static async list(callback: (name: string) => boolean, userSession?: UserSession) {
+  /**
+   * List the objects in a collection
+   * @param {function} callback - a callback to invoke on each object identifier that
+   * returns `true` to continue the listing operation or `false` to end it
+   * 
+   * @returns {Promise} that resolves to the number of objects listed
+   */
+  static async list(callback: (identifier: string) => boolean, userSession?: UserSession) {
     userSession = userSession || new UserSession()
     let hubConfig = await userSession.getCollectionGaiaHubConnection(this.collectionName)
-    return listFilesLoop(userSession, hubConfig, null, 0, 0, (name) => {
+    return listFilesLoop(userSession, hubConfig, null, 0, 0, (path) => {
       let collectionGaiaPathPrefix = COLLECTION_GAIA_PREFIX + '/'
-      if (name.startsWith(collectionGaiaPathPrefix)) {
+      if (path.startsWith(collectionGaiaPathPrefix)) {
         // Remove collection/ prefix from file names
-        let identifier = name.substr(collectionGaiaPathPrefix.length)
+        let identifier = path.substr(collectionGaiaPathPrefix.length)
         return callback(identifier)
       } else {
         // Skip non-collection prefix files
@@ -92,17 +158,49 @@ export abstract class Collection implements Serializable {
     })
   }
 
+  /**
+   * Deletes the object from the collection. 
+   * @param {String} identifier - The identifier of the collection object to delete
+   * @param {UserSession} userSession? - Optional user session object
+   * 
+   * @returns Resolves when the file has been removed or rejects with an error.
+   */
+  static async delete(identifier: string, userSession?: UserSession) {
+    userSession = userSession || new UserSession()
+    let hubConfig = await userSession.getCollectionGaiaHubConnection(this.collectionName)
+    let opt = {
+      gaiaHubConfig: hubConfig
+    }
+    const normalizedIdentifier = COLLECTION_GAIA_PREFIX + '/' + identifier
+    return deleteFile(normalizedIdentifier, opt, userSession)
+  }
+
+  /**
+   * Stores the collection object to collection data store.
+   * @param {UserSession} userSession? - Optional user session object
+   * 
+   * @returns {Promise} that resolves if the operation succeed and rejects
+   * if it failed
+   */
   async save(userSession?: UserSession) {
     userSession = userSession || new UserSession()
     let hubConfig = await userSession.getCollectionGaiaHubConnection(this.collectionName())
+    let identifier = this.constructIdentifier()
+    this.attrs.identifier = identifier
     let file = this.serialize()
-    let normalizedIdentifier = COLLECTION_GAIA_PREFIX + '/' + this.attrs.identifier
+    let normalizedIdentifier = COLLECTION_GAIA_PREFIX + '/' + identifier
     let opt = {
       gaiaHubConfig: hubConfig
     }
     return putFile(normalizedIdentifier, file, opt, userSession)
   }
 
+  /**
+   * Deletes the object from the collection. 
+   * @param {UserSession} userSession? - Optional user session object
+   * 
+   * @returns Resolves when the file has been removed or rejects with an error.
+   */
   async delete(userSession?: UserSession) {
     userSession = userSession || new UserSession()
     let hubConfig = await userSession.getCollectionGaiaHubConnection(this.collectionName())
@@ -113,8 +211,17 @@ export abstract class Collection implements Serializable {
     return deleteFile(normalizedIdentifier, opt, userSession)
   }
 
-  abstract serialize()
+  /**
+   * Build an identifier to be used as the filename of the collection object
+   * 
+   * @returns Returns an identifier string
+   */
+  abstract constructIdentifier()
 
-  public static schema: Schema
-  public schema: Schema
+  /**
+   * Serialize the collection object data for storage
+   * 
+   * @returns Returns serialized string data
+   */
+  abstract serialize()
 }
