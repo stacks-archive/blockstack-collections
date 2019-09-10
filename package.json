@@ -1,7 +1,7 @@
 {
   "name": "blockstack-collection-schemas",
   "version": "0.1.0",
-  "description": "Blockstack collection schemas",
+  "description": "Collection data types for use with Blockstack",
   "main": "lib/index",
   "scripts": {
     "build": "npm run build:node && npm run build:webpack",
