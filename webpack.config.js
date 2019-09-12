@@ -28,13 +28,14 @@ module.exports = (env, argv) => {
             {
               loader: 'ts-loader',
               options: {
-                configFile: "tsconfig.browser.json"
+                configFile: "tsconfig.json"
               }
             }
           ]
         },
         {
           test: /\.js$/,
+          exclude: /node_modules/,
           use: {
             loader: 'babel-loader'
           }
@@ -47,6 +48,9 @@ module.exports = (env, argv) => {
     },
     resolve: {
       extensions: ['.ts', '.js']
+    },
+    externals: {
+      blockstack: 'blockstack'
     },
     output: {
       filename: 'blockstack-collections.js',

@@ -21,15 +21,17 @@
     "url": "https://github.com/blockstack/blockstack-collection-schemas/issues"
   },
   "homepage": "https://github.com/blockstack/blockstack-collection-schemas#readme",
-  "dependencies": {
-    "blockstack": "^19.3.0"
+  "dependencies": {},
+  "peerDependencies": {
+    "blockstack": "^20.0.0-alpha.1"
   },
   "devDependencies": {
-    "cross-env": "^5.2.0",
+    "blockstack": "^20.0.0-alpha.1",
+    "cross-env": "^5.2.1",
     "shx": "^0.3.2",
-    "ts-loader": "^6.0.1",
-    "typescript": "^3.4.5",
-    "webpack": "^4.32.1",
-    "webpack-cli": "^3.3.2"
+    "ts-loader": "^6.1.0",
+    "typescript": "^3.6.3",
+    "webpack": "^4.39.3",
+    "webpack-cli": "^3.3.8"
   }
 }

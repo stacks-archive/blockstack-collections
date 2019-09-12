@@ -40,5 +40,4 @@ src/testing/browser/blockstack-proofs.js
 .nyc_output
 
 lib
-dist
 docs
