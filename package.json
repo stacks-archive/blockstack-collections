@@ -25,7 +25,7 @@
   "homepage": "https://github.com/blockstack/blockstack-collection-schemas#readme",
   "dependencies": {},
   "peerDependencies": {
-    "blockstack": "^19.3.0"
+    "blockstack": "^20.0.0-alpha.1"
   },
   "devDependencies": {
     "@babel/core": "^7.6.0",
