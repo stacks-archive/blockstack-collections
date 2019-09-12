@@ -3,6 +3,7 @@
   "version": "0.1.1",
   "description": "Collection data types for use with Blockstack",
   "main": "lib/index",
+  "unpkg": "dist/blockstack-collections.js",
   "scripts": {
     "build": "npm run build:node && npm run build:webpack",
     "build:webpack": "shx rm -rf dist/* && cross-env NODE_ENV=production webpack --mode=production",
