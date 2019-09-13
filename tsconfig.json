@@ -2,10 +2,12 @@
   "compilerOptions": {
     "target": "es6",
     "module": "commonjs",
+    "moduleResolution": "node",
     "noImplicitAny": false,
     "sourceMap": true,
     "outDir": "lib",
-    "esModuleInterop": true
+    "esModuleInterop": false,
+    "skipLibCheck": true
   },
   "include": [
     "src/**/*"

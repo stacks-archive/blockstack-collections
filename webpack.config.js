@@ -1,10 +1,10 @@
 const path = require('path');
-const fs = require('fs');
 
 module.exports = (env, argv) => {
 
   env = env || {};
   argv = argv || {};
+  const isEnvAnalyze = process.env.ANALYZE || env.ANALYZE;
   const isEnvDev = [process.env, env.NODE_ENV, argv.mode].includes('development') || env.development;
   const isEnvTest = [process.env, env.NODE_ENV, argv.mode].includes('test') || env.test;
   const isEnvProd = [process.env, env.NODE_ENV, argv.mode].includes('production') || env.production;
@@ -22,22 +22,29 @@ module.exports = (env, argv) => {
     module: {
       rules: [
         {
-          test: /\.ts?$/,
-          exclude: /node_modules/,
+          test: /\.ts$/,
+          exclude: /(node_modules|bower_components)/,
           use: [
+            {
+              loader: 'babel-loader',
+              options: {
+                presets: [
+                  ['@babel/preset-env', {
+                    targets: '> 2%',
+                    useBuiltIns: 'usage',
+                    corejs: { version: 3 },
+                  }]
+                ]
+              }
+            },
             {
               loader: 'ts-loader',
               options: {
-                configFile: "tsconfig.browser.json"
+                configFile: 'tsconfig.browser.json',
+                transpileOnly: true
               }
             }
           ]
-        },
-        {
-          test: /\.js$/,
-          use: {
-            loader: 'babel-loader'
-          }
         }
       ].concat((isEnvDev || isEnvTest) ? {
         test: /\.js$/,
@@ -48,14 +55,39 @@ module.exports = (env, argv) => {
     resolve: {
       extensions: ['.ts', '.js']
     },
+    externals: {
+      blockstack: 'blockstack'
+    },
     output: {
       filename: 'blockstack-collections.js',
       path: path.resolve(__dirname, 'dist'),
-      library: 'blockstack-collections',
+      library: 'blockstackCollections',
       libraryTarget: 'umd',
       globalObject: 'this'
     },
-    plugins: []
+    plugins: [],
+    devServer: {
+      contentBase: [path.join(__dirname, 'page_test'), path.join(__dirname, 'dist')],
+      index: path.join(__dirname, 'page_test', 'index.html'),
+      host: '127.0.0.1',
+      port: 9134,
+      open: true,
+      before: app => {
+        // Configure manifest.json CORS headers.
+        app.get('/manifest.json', (req, res, next) => {
+          res.set({
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': '*',
+            'Access-Control-Allow-Methods': 'GET',
+          });
+          next();
+        })
+      }
+    }
+  }
+
+  if (isEnvAnalyze) {
+    opts.plugins.push(new (require('webpack-bundle-analyzer').BundleAnalyzerPlugin)())
   }
 
   return opts;

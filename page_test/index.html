@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Collections UMD loading test page</title>
+  <script src="https://unpkg.com/blockstack@20.0.0-alpha.1/dist/blockstack.js"
+    integrity="sha384-Ny12qBvDhubSqTC4oNfF9OTLVEnj/0rfUUd6pWOtF+ex8wnFnU7i/tGLjyepRkkG"
+    crossorigin="anonymous"></script>
+  <script src="blockstack-collections.js"></script>
+</head>
+
+<body>
+  <h1>Collections UMD bundle loading test page</h1>
+  <div>
+    <script>
+      try {
+        const contactTest = blockstackCollections.Contact.fromData('{"firstName": "blockstacker"}');
+        const contractName = contactTest.firstName;
+        document.write(`COLLECTION UMD BUNDLE LOAD SUCCESS: ${contractName}`);
+      } catch (error) {
+        console.error(error);
+        document.write(`ERROR: ${error}`);
+      }
+    </script>
+
+  </div>
+
+  <div id="sign-in-page" style="display:none">
+    <button id="sign-in">Sign in</button>
+  </div>
+
+  <div id="sign-out-page" style="display:none">
+    <button id="sign-out">Sign out</button>
+    <button id="create-contact">Create contact</button>
+    <button id="list-contacts">List contacts</button>
+  </div>
+
+
+  <div id="contact-list"></div>
+  <div id="result"></div>
+
+
+  <script>
+
+    function logError(msg, error) {
+      console.error(msg);
+      console.error(error);
+      document.getElementById('result').append(`\nERROR ${msg}: ${error}`);
+    }
+
+    (async function () {
+      try {
+        const { UserSession, AppConfig, makeAuthRequest } = blockstack;
+        const { Contact } = blockstackCollections;
+
+        const scopes = ['store_write', 'publish_data', Contact.scope];
+        const appConfig = new AppConfig(scopes);
+        const userSession = new UserSession({ appConfig: appConfig });
+
+        if (await userSession.isUserSignedIn()) {
+          document.getElementById('sign-in-page').style.display = 'none';
+          document.getElementById('sign-out-page').style.display = 'block';
+        } else if (await userSession.isSignInPending()) {
+          await userSession.handlePendingSignIn();
+          history.replaceState({}, document.title, location.pathname);
+          document.getElementById('sign-in-page').style.display = 'none';
+          document.getElementById('sign-out-page').style.display = 'block';
+        } else {
+          document.getElementById('sign-in-page').style.display = 'block';
+          document.getElementById('sign-out-page').style.display = 'none';
+        }
+
+        document.getElementById('sign-out').onclick = async () => {
+          try {
+            await userSession.signUserOut(location.origin + location.pathname);
+          } catch (error) {
+            logError('Sign out', error);
+          }
+        };
+
+        document.getElementById('sign-in').onclick = async () => {
+          try {
+            const authRequest = makeAuthRequest(undefined, undefined, undefined, scopes, undefined, undefined, {
+              solicitGaiaHubUrl: true,
+              recommendedGaiaHubUrl: 'https://develop-hub.blockstack.org'
+            });
+            userSession.redirectToSignInWithAuthRequest(authRequest);
+          } catch (error) {
+            logError('Sign in', error);
+          }
+        };
+
+        document.getElementById('create-contact').onclick = async () => {
+          try {
+            const newContact = {
+              lastName: 'Stackerson',
+              firstName: 'Blocky',
+              blockstackID: 'Blockstacker.id',
+              email: 'blockstacker@blockstack.org',
+              website: 'blockstack.org',
+              telephone: '123123123'
+            };
+            const contact = new Contact(newContact);
+            const contactID = await contact.save();
+          } catch (error) {
+            logError('Create contact', error);
+          }
+        };
+
+        document.getElementById('list-contacts').onclick = async () => {
+          try {
+            const contacts = []
+            await Contact.list((contactID) => {
+              contacts.push(contactID);
+              return true;
+            });
+            for (const contactID of contacts) {
+              const contact = await Contract.get(contactID);
+              document.getElementById('contract-list').append(`\n${JSON.stringify(contract)}`);
+            }
+          } catch (error) {
+            logError('Listing contracts', error);
+          }
+        };
+
+      } catch (error) {
+        logError('Setup', error);
+      }
+    })();
+
+  </script>
+
+</body>
+
+</html>

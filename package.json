@@ -1,12 +1,15 @@
 {
   "name": "blockstack-collection-schemas",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Collection data types for use with Blockstack",
   "main": "lib/index",
+  "unpkg": "dist/blockstack-collections.js",
   "scripts": {
     "build": "npm run build:node && npm run build:webpack",
     "build:webpack": "shx rm -rf dist/* && cross-env NODE_ENV=production webpack --mode=production",
     "build:webpack:watch": "shx rm -rf dist/* && cross-env NODE_ENV=development webpack --mode=development --watch --progress --info-verbosity verbose",
+    "build:webpack:analyze": "shx rm -rf dist/* && cross-env NODE_ENV=production ANALYZE=true webpack --mode=production",
+    "start": "webpack-dev-server",
     "build:node": "shx rm -rf lib && tsc",
     "build:node:watch": "shx rm -rf lib && tsc --watch",
     "test": "test"
@@ -21,15 +24,23 @@
     "url": "https://github.com/blockstack/blockstack-collection-schemas/issues"
   },
   "homepage": "https://github.com/blockstack/blockstack-collection-schemas#readme",
-  "dependencies": {
-    "blockstack": "^19.3.0"
+  "dependencies": {},
+  "peerDependencies": {
+    "blockstack": "^20.0.0-alpha.1"
   },
   "devDependencies": {
-    "cross-env": "^5.2.0",
+    "@babel/core": "^7.6.0",
+    "@babel/preset-env": "^7.6.0",
+    "babel-loader": "^8.0.6",
+    "blockstack": "^20.0.0-alpha.1",
+    "core-js": "^3.2.1",
+    "cross-env": "^5.2.1",
     "shx": "^0.3.2",
-    "ts-loader": "^6.0.1",
-    "typescript": "^3.4.5",
-    "webpack": "^4.32.1",
-    "webpack-cli": "^3.3.2"
+    "ts-loader": "^6.1.0",
+    "typescript": "^3.6.3",
+    "webpack": "^4.39.3",
+    "webpack-bundle-analyzer": "^3.5.0",
+    "webpack-cli": "^3.3.8",
+    "webpack-dev-server": "^3.8.0"
   }
 }

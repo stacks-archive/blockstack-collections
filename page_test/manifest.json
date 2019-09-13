@@ -1,0 +1,10 @@
+{
+  "name": "Collections page testing",
+  "start_url": "127.0.0.1:9134",
+  "description": "Collections page testing",
+  "icons": [{
+    "src": "none",
+    "sizes": "192x192",
+    "type": "image/png"
+  }]
+}
