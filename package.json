@@ -1,6 +1,6 @@
 {
   "name": "blockstack-collection-schemas",
-  "version": "0.1.1",
+  "version": "0.1.4",
   "description": "Collection data types for use with Blockstack",
   "main": "lib/index",
   "unpkg": "dist/blockstack-collections.js",
