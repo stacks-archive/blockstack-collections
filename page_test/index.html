@@ -7,7 +7,7 @@
   <script src="https://unpkg.com/blockstack@20.0.0-alpha.1/dist/blockstack.js"
     integrity="sha384-Ny12qBvDhubSqTC4oNfF9OTLVEnj/0rfUUd6pWOtF+ex8wnFnU7i/tGLjyepRkkG"
     crossorigin="anonymous"></script>
-  <script src="blockstack-collections.js"></script>
+  <script src="../dist/blockstack-collections.js"></script>
 </head>
 
 <body>
@@ -49,6 +49,12 @@
       document.getElementById('result').append(`\nERROR ${msg}: ${error}`);
     }
 
+    function toAbsoluteURL(url) {
+      const a = document.createElement('a');
+      a.setAttribute('href', url);
+      return a.cloneNode(false).href;
+    }
+
     (async function () {
       try {
         const { UserSession, AppConfig, makeAuthRequest } = blockstack;
@@ -57,6 +63,8 @@
         const scopes = ['store_write', 'publish_data', Contact.scope];
         const appConfig = new AppConfig(scopes);
         const userSession = new UserSession({ appConfig: appConfig });
+
+        window.userSession = userSession;
 
         if (await userSession.isUserSignedIn()) {
           document.getElementById('sign-in-page').style.display = 'none';
@@ -81,7 +89,9 @@
 
         document.getElementById('sign-in').onclick = async () => {
           try {
-            const authRequest = makeAuthRequest(undefined, undefined, undefined, scopes, undefined, undefined, {
+            const redirectUrl = location.origin + location.pathname;
+            const manifestUrl = toAbsoluteURL('manifest.json');
+            const authRequest = makeAuthRequest(undefined, redirectUrl, manifestUrl, scopes, undefined, undefined, {
               solicitGaiaHubUrl: true,
               recommendedGaiaHubUrl: 'https://develop-hub.blockstack.org'
             });

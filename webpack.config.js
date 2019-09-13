@@ -67,21 +67,15 @@ module.exports = (env, argv) => {
     },
     plugins: [],
     devServer: {
-      contentBase: [path.join(__dirname, 'page_test'), path.join(__dirname, 'dist')],
-      index: path.join(__dirname, 'page_test', 'index.html'),
+      contentBase: [__dirname],
+      openPage: 'page_test/',
       host: '127.0.0.1',
       port: 9134,
       open: true,
-      before: app => {
-        // Configure manifest.json CORS headers.
-        app.get('/manifest.json', (req, res, next) => {
-          res.set({
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': '*',
-            'Access-Control-Allow-Methods': 'GET',
-          });
-          next();
-        })
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': '*',
+        'Access-Control-Allow-Methods': 'GET',
       }
     }
   }
