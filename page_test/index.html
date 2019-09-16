@@ -46,7 +46,9 @@
     function logError(msg, error) {
       console.error(msg);
       console.error(error);
-      document.getElementById('result').append(`\nERROR ${msg}: ${error}`);
+      const errorEl = document.createElement('div');
+      errorEl.innerText = `ERROR ${msg}: ${error}`;
+      document.getElementById('result').append(errorEl);
     }
 
     function toAbsoluteURL(url) {
@@ -95,7 +97,7 @@
             const manifestUrl = toAbsoluteURL('manifest.json');
             const authRequest = makeAuthRequest(undefined, redirectUrl, manifestUrl, scopes, undefined, undefined, {
               solicitGaiaHubUrl: true,
-              recommendedGaiaHubUrl: 'https://develop-hub.blockstack.org'
+              recommendedGaiaHubUrl: 'https://staging-hub.blockstack.xyz'
             });
             userSession.redirectToSignInWithAuthRequest(authRequest);
           } catch (error) {
@@ -136,25 +138,28 @@
               return true;
             });
             for (const contactID of contacts) {
+              let contactData;
               try {
                 const contact = await Contact.get(contactID);
-                const contactEl = document.createElement('div');
-                const deleteBtn = document.createElement('button');
-                deleteBtn.innerText = 'Delete';
-                deleteBtn.onclick = async () => {
-                  try {
-                    await contact.delete();
-                    contactEl.remove();
-                  } catch (error) {
-                    logError('Delete contact', error);
-                  }
-                };
-                contactEl.append(deleteBtn);
-                contactEl.append(JSON.stringify(contact));
-                contactListEl.append(contactEl);
+                contactData = JSON.stringify(contact);
               } catch (error) {
                 logError(`Getting contact ${contactID}`, error);
+                contactData = `Error getting contact ${contactID}: ${error}`;
               }
+              const contactEl = document.createElement('div');
+              const deleteBtn = document.createElement('button');
+              deleteBtn.innerText = 'Delete';
+              deleteBtn.onclick = async () => {
+                try {
+                  await Contact.delete(contactID);
+                  contactEl.remove();
+                } catch (error) {
+                  logError('Delete contact', error);
+                }
+              };
+              contactEl.append(deleteBtn);
+              contactEl.append(contactData);
+              contactListEl.append(contactEl);
             }
           } catch (error) {
             logError('Listing contacts', error);
