@@ -97,7 +97,7 @@
             const manifestUrl = toAbsoluteURL('manifest.json');
             const authRequest = makeAuthRequest(undefined, redirectUrl, manifestUrl, scopes, undefined, undefined, {
               solicitGaiaHubUrl: true,
-              recommendedGaiaHubUrl: 'https://develop-hub.blockstack.org'
+              recommendedGaiaHubUrl: 'https://staging-hub.blockstack.xyz'
             });
             userSession.redirectToSignInWithAuthRequest(authRequest);
           } catch (error) {
