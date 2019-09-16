@@ -16,8 +16,8 @@
     <script>
       try {
         const contactTest = blockstackCollections.Contact.fromData('{"firstName": "blockstacker"}');
-        const contractName = contactTest.firstName;
-        document.write(`COLLECTION UMD BUNDLE LOAD SUCCESS: ${contractName}`);
+        const contactName = contactTest.firstName;
+        document.write(`COLLECTION UMD BUNDLE LOAD SUCCESS: ${contactName}`);
       } catch (error) {
         console.error(error);
         document.write(`ERROR: ${error}`);
@@ -69,11 +69,13 @@
         if (await userSession.isUserSignedIn()) {
           document.getElementById('sign-in-page').style.display = 'none';
           document.getElementById('sign-out-page').style.display = 'block';
+          listContacts();
         } else if (await userSession.isSignInPending()) {
           await userSession.handlePendingSignIn();
           history.replaceState({}, document.title, location.pathname);
           document.getElementById('sign-in-page').style.display = 'none';
           document.getElementById('sign-out-page').style.display = 'block';
+          listContacts();
         } else {
           document.getElementById('sign-in-page').style.display = 'block';
           document.getElementById('sign-out-page').style.display = 'none';
@@ -105,7 +107,7 @@
           try {
             const newContact = {
               lastName: 'Stackerson',
-              firstName: 'Blocky',
+              firstName: `Blocky-${Date.now()}`,
               blockstackID: 'Blockstacker.id',
               email: 'blockstacker@blockstack.org',
               website: 'blockstack.org',
@@ -113,26 +115,53 @@
             };
             const contact = new Contact(newContact);
             const contactID = await contact.save();
+            listContacts();
           } catch (error) {
             logError('Create contact', error);
           }
         };
 
-        document.getElementById('list-contacts').onclick = async () => {
+        async function listContacts() {
           try {
+            const contactListEl = document.getElementById('contact-list');
+
+            // clear display list
+            while (contactListEl.firstChild) {
+              contactListEl.firstChild.remove();
+            }
+
             const contacts = []
             await Contact.list((contactID) => {
               contacts.push(contactID);
               return true;
             });
             for (const contactID of contacts) {
-              const contact = await Contract.get(contactID);
-              document.getElementById('contract-list').append(`\n${JSON.stringify(contract)}`);
+              try {
+                const contact = await Contact.get(contactID);
+                const contactEl = document.createElement('div');
+                const deleteBtn = document.createElement('button');
+                deleteBtn.innerText = 'Delete';
+                deleteBtn.onclick = async () => {
+                  try {
+                    await contact.delete();
+                    contactEl.remove();
+                  } catch (error) {
+                    logError('Delete contact', error);
+                  }
+                };
+                contactEl.append(deleteBtn);
+                contactEl.append(JSON.stringify(contact));
+                contactListEl.append(contactEl);
+              } catch (error) {
+                logError(`Getting contact ${contactID}`, error);
+              }
             }
           } catch (error) {
-            logError('Listing contracts', error);
+            logError('Listing contacts', error);
           }
-        };
+        }
+
+        document.getElementById('list-contacts').onclick = () => listContacts();
 
       } catch (error) {
         logError('Setup', error);
