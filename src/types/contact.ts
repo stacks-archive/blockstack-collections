@@ -58,6 +58,7 @@ export class Contact extends Collection implements Serializable {
       .then((result) => {
         if (this.identifierChanged) {
           Contact.delete(this.previousIdentifier, userSession)
+          this.identifierChanged = false
         }
         return result
       })
