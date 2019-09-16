@@ -3,7 +3,8 @@ import {
   getFile,
   putFile,
   deleteFile,
-  listFilesLoop
+  listFilesLoop,
+  getPublicKeyFromPrivate
 } from 'blockstack'
 
 export const COLLECTION_GAIA_PREFIX = 'collection'
@@ -120,10 +121,12 @@ export abstract class Collection implements Serializable {
    */
   static async get(identifier: string, userSession?: UserSession) {
     userSession = userSession || new UserSession()
-    let hubConfig = await userSession.getCollectionGaiaHubConnection(this.collectionName)
+    let config = await userSession.getCollectionConfigs(this.collectionName)
+    let hubConfig = config.hubConfig
     let normalizedIdentifier = COLLECTION_GAIA_PREFIX + '/' + identifier
     let opt = {
-      gaiaHubConfig: hubConfig
+      gaiaHubConfig: hubConfig,
+      decrypt: config.encryptionKey
     }
     return getFile(normalizedIdentifier, opt, userSession)
       .then((fileContent) => {
@@ -144,7 +147,8 @@ export abstract class Collection implements Serializable {
    */
   static async list(callback: (identifier: string) => boolean, userSession?: UserSession) {
     userSession = userSession || new UserSession()
-    let hubConfig = await userSession.getCollectionGaiaHubConnection(this.collectionName)
+    let config = await userSession.getCollectionConfigs(this.collectionName)
+    let hubConfig = config.hubConfig
     return listFilesLoop(userSession, hubConfig, null, 0, 0, (path) => {
       let collectionGaiaPathPrefix = COLLECTION_GAIA_PREFIX + '/'
       if (path.startsWith(collectionGaiaPathPrefix)) {
@@ -167,7 +171,8 @@ export abstract class Collection implements Serializable {
    */
   static async delete(identifier: string, userSession?: UserSession) {
     userSession = userSession || new UserSession()
-    let hubConfig = await userSession.getCollectionGaiaHubConnection(this.collectionName)
+    let config = await userSession.getCollectionConfigs(this.collectionName)
+    let hubConfig = config.hubConfig
     let opt = {
       gaiaHubConfig: hubConfig
     }
@@ -184,13 +189,15 @@ export abstract class Collection implements Serializable {
    */
   async save(userSession?: UserSession) {
     userSession = userSession || new UserSession()
-    let hubConfig = await userSession.getCollectionGaiaHubConnection(this.collectionName())
+    let config = await userSession.getCollectionConfigs(this.collectionName())
+    let hubConfig = config.hubConfig
     let identifier = this.constructIdentifier()
     this.attrs.identifier = identifier
     let file = this.serialize()
     let normalizedIdentifier = COLLECTION_GAIA_PREFIX + '/' + identifier
     let opt = {
-      gaiaHubConfig: hubConfig
+      gaiaHubConfig: hubConfig,
+      encrypt: getPublicKeyFromPrivate(config.encryptionKey)
     }
     return putFile(normalizedIdentifier, file, opt, userSession).then(() => {
       return identifier
@@ -205,7 +212,8 @@ export abstract class Collection implements Serializable {
    */
   async delete(userSession?: UserSession) {
     userSession = userSession || new UserSession()
-    let hubConfig = await userSession.getCollectionGaiaHubConnection(this.collectionName())
+    let config = await userSession.getCollectionConfigs(this.collectionName())
+    let hubConfig = config.hubConfig
     let opt = {
       gaiaHubConfig: hubConfig
     }
