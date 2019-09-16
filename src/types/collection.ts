@@ -149,7 +149,7 @@ export abstract class Collection implements Serializable {
     userSession = userSession || new UserSession()
     let config = await userSession.getCollectionConfigs(this.collectionName)
     let hubConfig = config.hubConfig
-    return listFilesLoop(userSession, hubConfig, null, 0, 0, (path) => {
+    return listFilesLoop(userSession, hubConfig, null, 0, 0, false, (path) => {
       let collectionGaiaPathPrefix = COLLECTION_GAIA_PREFIX + '/'
       if (path.startsWith(collectionGaiaPathPrefix)) {
         // Remove collection/ prefix from file names
