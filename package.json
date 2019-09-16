@@ -1,6 +1,6 @@
 {
   "name": "blockstack-collections",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Collection data types for use with Blockstack",
   "main": "lib/index",
   "unpkg": "dist/blockstack-collections.js",
@@ -26,13 +26,13 @@
   "homepage": "https://github.com/blockstack/blockstack-collection-schemas#readme",
   "dependencies": {},
   "peerDependencies": {
-    "blockstack": "^20.0.0-alpha.1"
+    "blockstack": "^20.0.0-alpha.4"
   },
   "devDependencies": {
     "@babel/core": "^7.6.0",
     "@babel/preset-env": "^7.6.0",
     "babel-loader": "^8.0.6",
-    "blockstack": "^20.0.0-alpha.1",
+    "blockstack": "^20.0.0-alpha.4",
     "core-js": "^3.2.1",
     "cross-env": "^5.2.1",
     "shx": "^0.3.2",
