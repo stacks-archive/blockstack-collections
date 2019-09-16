@@ -46,7 +46,9 @@
     function logError(msg, error) {
       console.error(msg);
       console.error(error);
-      document.getElementById('result').append(`\nERROR ${msg}: ${error}`);
+      const errorEl = document.createElement('div');
+      errorEl.innerText = `ERROR ${msg}: ${error}`;
+      document.getElementById('result').append(errorEl);
     }
 
     function toAbsoluteURL(url) {
