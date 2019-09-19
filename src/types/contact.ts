@@ -32,6 +32,9 @@ export class Contact extends Collection implements Serializable {
 
   constructor(attrs: Attrs = {}) {
     super(attrs)
+    if (!this.attrs.identifier) {
+      this.attrs.identifier = this.constructIdentifier()
+    }
   }
 
   collectionName(): string {
