@@ -60,10 +60,14 @@ export class Contact extends Collection implements Serializable {
     return super.save(userSession)
       .then((result) => {
         if (this.identifierChanged) {
-          Contact.delete(this.previousIdentifier, userSession)
-          this.identifierChanged = false
+          return Contact.delete(this.previousIdentifier, userSession)
+            .then(() => {
+              this.identifierChanged = false
+              return result
+            })
+        } else {
+          return result
         }
-        return result
       })
   }
 
