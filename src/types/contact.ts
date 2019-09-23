@@ -3,6 +3,8 @@ import { UserSession } from 'blockstack'
 
 export class Contact extends Collection implements Serializable {
 
+  static singleFile = true
+
   static get collectionName(): string {
     return 'contact'
   }
@@ -17,6 +19,10 @@ export class Contact extends Collection implements Serializable {
     address: String,
     telephone: String,
     organization: String
+  }
+
+  static fromObject(object: object) {
+    return new Contact(object)
   }
 
   static fromData(data: string) {
