@@ -148,14 +148,9 @@ export abstract class Collection implements Serializable {
       const indexFileName = COLLECTION_GAIA_PREFIX + '/' + COLLECTION_INDEX_FILENAME
       return getFile(indexFileName, opt, userSession)
         .then((fileContent) => {
-          console.log(fileContent)
           if (fileContent) {
-            console.log('parsing index file')
             const indexFile = JSON.parse(fileContent as string)
-            console.log(indexFile)
             if (indexFile[identifier]) {
-              console.log('identifier content')
-              console.log(indexFile[identifier])
               return this.fromObject(indexFile[identifier])
             } else {
               throw new Error('Collection item not found')
@@ -203,22 +198,15 @@ export abstract class Collection implements Serializable {
       .then((fileContent) => {
         if (fileContent) {
           const indexFile = JSON.parse(fileContent as string)
-          console.log(indexFile)
-          console.log(typeof indexFile)
           if (indexFile instanceof Object) { 
-            console.log(indexFile)
             const keys = Object.keys(indexFile)
-            console.log('keys')
-            console.log(keys)
             keys.forEach(key => {
               callback(key)
             });
           } else {
-            console.log('here')
             return 0
           }
         } else {
-          console.log('here 2')
           return 0
         }
       })
@@ -257,20 +245,15 @@ export abstract class Collection implements Serializable {
       encrypt: getPublicKeyFromPrivate(encryptionKey)
     }
 
-    console.log('deleting single file collection')
     const indexFileName = COLLECTION_GAIA_PREFIX + '/' + COLLECTION_INDEX_FILENAME
     return getFile(indexFileName, getFileOpt, userSession)
       .then((fileContent) => {
         let newIndexFile
         if (fileContent) {
           const indexFile = JSON.parse(fileContent as string)
-          console.log('deleting from index file')
-          console.log(indexFile)
           if (indexFile[identifier]) {
             delete indexFile[identifier]
             newIndexFile = JSON.stringify(indexFile)
-            console.log('deleted')
-            console.log(indexFile)
             return putFile(indexFileName, newIndexFile, putFileOpt, userSession)
               .then(() => Promise.resolve())
           } else {
@@ -290,7 +273,6 @@ export abstract class Collection implements Serializable {
     const opt = {
       gaiaHubConfig: hubConfig
     }
-    console.log('NOT deleting single file collection')
     const normalizedIdentifier = COLLECTION_GAIA_PREFIX + '/' + identifier
     return deleteFile(normalizedIdentifier, opt, userSession)
   }
