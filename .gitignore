@@ -29,6 +29,7 @@ node_modules
 # Other
 unused
 .DS_Store
+.vscode
 
 # Folder to ignore for development with es6
 bundle.js
