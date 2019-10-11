@@ -24,7 +24,10 @@
     "url": "https://github.com/blockstack/blockstack-collection-schemas/issues"
   },
   "homepage": "https://github.com/blockstack/blockstack-collection-schemas#readme",
-  "dependencies": {},
+  "dependencies": {
+    "lodash": "^4.17.15",
+    "uuid": "^3.3.3"
+  },
   "peerDependencies": {
     "blockstack": "^20.0.0-alpha.4"
   },
