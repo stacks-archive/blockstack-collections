@@ -38,6 +38,7 @@ export abstract class Collection implements Serializable {
 
   public attrs: Attrs
   public schema: Schema
+  public metadata: string[]
   private singleFile
 
   static schemaVersion = '1.0'
@@ -47,9 +48,18 @@ export abstract class Collection implements Serializable {
     identifier: String
   }
 
+  public static metadata = []
+
   constructor(attrs: Attrs = {}) {
-    const { schema, singleFile } = this.constructor as typeof Collection
+    const { schema, metadata, singleFile } = this.constructor as typeof Collection
+    for (const key of metadata) {
+      if (!Object.keys(schema).includes(key)) {
+        throw new Error('Metadata schema includes field not present in collection\'s schema')
+      }
+    }
+
     this.schema = schema
+    this.metadata = metadata
     this.singleFile = singleFile
 
     this.attrs = {
@@ -386,6 +396,9 @@ export abstract class Collection implements Serializable {
     // return deleteFile(normalizedIdentifier, opt, userSession)
   }
 
+  getMetadata() {
+    return _.pick(this.attrs, this.metadata)
+  }
 
   /**
    * Serialize the collection object data for storage

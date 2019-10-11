@@ -21,6 +21,8 @@ export class Contact extends Collection implements Serializable {
     organization: String
   }
 
+  static metadata = ['identifier', 'firstName', 'lastName']
+
   static fromObject(object: object) {
     return new Contact(object)
   }
