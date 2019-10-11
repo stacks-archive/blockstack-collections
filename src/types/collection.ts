@@ -8,6 +8,7 @@ import {
   GaiaHubConfig
 } from 'blockstack'
 
+import * as _ from 'lodash'
 import * as uuid from 'uuid/v4'
 
 export const COLLECTION_GAIA_PREFIX = 'collection'
@@ -198,7 +199,7 @@ export abstract class Collection implements Serializable {
    * 
    * @returns {Promise} that resolves to the number of objects listed
    */
-  static async list(callback: (identifier: string) => boolean, userSession?: UserSession) {
+  static async list(callback: (metadata: any) => boolean, userSession?: UserSession) {
     userSession = userSession || new UserSession()
     const config = await userSession.getCollectionConfigs(this.collectionName)
     const hubConfig = config.hubConfig
@@ -215,9 +216,9 @@ export abstract class Collection implements Serializable {
         if (fileContent) {
           const indexFile = JSON.parse(fileContent as string)
           if (indexFile instanceof Object) { 
-            const keys = Object.keys(indexFile)
-            keys.forEach(key => {
-              callback(key)
+            const values = Object.values(indexFile)
+            values.forEach(val => {
+              callback(_.pick(val, this.metadata))
             });
           } else {
             return 0
