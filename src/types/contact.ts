@@ -33,23 +33,8 @@ export class Contact extends Collection implements Serializable {
     return new Contact(JSON.parse(data))
   }
 
-  identifierChanged: boolean = false
-  previousIdentifier: string
-
-  constructor(attrs: Attrs = {}) {
-    super(attrs)
-    if (!this.attrs.identifier) {
-      this.attrs.identifier = this.constructIdentifier()
-    }
-  }
-
   collectionName(): string {
     return Contact.collectionName
-  }
-
-  constructIdentifier() {
-    // Create identifier based on first and last name
-    return `${this.attrs.firstName || ''} ${this.attrs.lastName || ''}`
   }
 
   serialize() {
@@ -61,32 +46,4 @@ export class Contact extends Collection implements Serializable {
     return JSON.stringify(this.attrs)
   }
 
-  async save(userSession?: UserSession) {
-    // Delete old file on save if object identifier changes
-    return super.save(userSession)
-      .then((result) => {
-        if (this.identifierChanged) {
-          return Contact.delete(this.previousIdentifier, userSession)
-            .then(() => {
-              this.identifierChanged = false
-              return result
-            })
-        } else {
-          return result
-        }
-      })
-  }
-
-  onValueChange(key: string, value: any) {
-    if (key === 'firstName') {
-      this.previousIdentifier = this.attrs.identifier
-      this.attrs.identifier = this.constructIdentifier()
-      this.identifierChanged = true
-    }
-    else if (key === 'lastName') {
-      this.previousIdentifier = this.attrs.identifier
-      this.attrs.identifier = this.constructIdentifier()
-      this.identifierChanged = true
-    }
-  }
 }

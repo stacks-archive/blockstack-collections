@@ -8,6 +8,8 @@ import {
   GaiaHubConfig
 } from 'blockstack'
 
+import * as uuid from 'uuid/v4'
+
 export const COLLECTION_GAIA_PREFIX = 'collection'
 export const COLLECTION_INDEX_FILENAME = 'index.json'
 export const COLLECTION_SCOPE_PREFIX = 'collection.'
@@ -53,6 +55,10 @@ export abstract class Collection implements Serializable {
     this.attrs = {
       ...attrs
     };
+
+    if (!this.attrs.identifier) {
+      this.attrs.identifier = uuid()
+    }
 
     this.defineDynamicGetterSetters(this.schema, this.attrs)
   }
@@ -320,9 +326,6 @@ export abstract class Collection implements Serializable {
       decrypt: config.encryptionKey
     }
 
-    const identifier = this.constructIdentifier()
-    this.attrs.identifier = identifier
-
     if (this.singleFile) {
       // Single file collections
       const indexFileName = COLLECTION_GAIA_PREFIX + '/' + COLLECTION_INDEX_FILENAME
@@ -332,22 +335,22 @@ export abstract class Collection implements Serializable {
           if (fileContent) {
             // Add to existing index file
             const indexFile = JSON.parse(fileContent as string)
-            indexFile[identifier] = this.attrs
+            indexFile[this.attrs.identifier] = this.attrs
             newIndexFile = JSON.stringify(indexFile)
           } else {
             // Create new index file
-            newIndexFile = JSON.stringify({ [identifier]: this.attrs })
+            newIndexFile = JSON.stringify({ [this.attrs.identifier]: this.attrs })
           }
           return putFile(indexFileName, newIndexFile, opt, userSession).then(() => {
-            return identifier
+            return this.attrs.identifier
           })
         })
     } else {
       // Multi-file collections
       const item = this.serialize()
-      const normalizedIdentifier = COLLECTION_GAIA_PREFIX + '/' + identifier
+      const normalizedIdentifier = COLLECTION_GAIA_PREFIX + '/' + this.attrs.identifier
       return putFile(normalizedIdentifier, item, opt, userSession).then(() => {
-        return identifier
+        return this.attrs.identifier
       })
     }
   }
@@ -383,12 +386,6 @@ export abstract class Collection implements Serializable {
     // return deleteFile(normalizedIdentifier, opt, userSession)
   }
 
-  /**
-   * Build an identifier to be used as the filename of the collection object
-   * 
-   * @returns Returns an identifier string
-   */
-  abstract constructIdentifier()
 
   /**
    * Serialize the collection object data for storage
