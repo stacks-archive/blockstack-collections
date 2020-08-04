@@ -4,10 +4,12 @@ import {
   putFile,
   deleteFile,
   listFilesLoop,
-  getPublicKeyFromPrivate
+  getPublicKeyFromPrivate,
+  GaiaHubConfig
 } from 'blockstack'
 
 export const COLLECTION_GAIA_PREFIX = 'collection'
+export const COLLECTION_INDEX_FILENAME = 'index.json'
 export const COLLECTION_SCOPE_PREFIX = 'collection.'
 
 export interface SchemaAttribute {
@@ -34,16 +36,19 @@ export abstract class Collection implements Serializable {
 
   public attrs: Attrs
   public schema: Schema
+  private singleFile
 
   static schemaVersion = '1.0'
+  static singleFile: boolean = false
 
   public static schema: Schema = {
     identifier: String
   }
 
   constructor(attrs: Attrs = {}) {
-    const { schema } = this.constructor as typeof Collection
+    const { schema, singleFile } = this.constructor as typeof Collection
     this.schema = schema
+    this.singleFile = singleFile
 
     this.attrs = {
       ...attrs
@@ -113,6 +118,16 @@ export abstract class Collection implements Serializable {
   }
 
   /**
+   * Returns an instance of the collection object created from an object containing 
+   * all of the attributes
+   * 
+   * @returns Returns a collection object
+   */
+  static fromObject(object: object) {
+    throw new Error('Required abstract method fromObject was not implemented')
+  }
+
+  /**
    * Retrieves a collection object from the collection data store
    * @param {String} identifier - The identifier of the collection object to retrieve
    * @param {UserSession} userSession? - Optional user session object
@@ -121,21 +136,43 @@ export abstract class Collection implements Serializable {
    */
   static async get(identifier: string, userSession?: UserSession) {
     userSession = userSession || new UserSession()
-    let config = await userSession.getCollectionConfigs(this.collectionName)
-    let hubConfig = config.hubConfig
-    let normalizedIdentifier = COLLECTION_GAIA_PREFIX + '/' + identifier
-    let opt = {
+    const config = await userSession.getCollectionConfigs(this.collectionName)
+    const hubConfig = config.hubConfig
+    const opt = {
       gaiaHubConfig: hubConfig,
       decrypt: config.encryptionKey
     }
-    return getFile(normalizedIdentifier, opt, userSession)
-      .then((fileContent) => {
-        if (fileContent) {
-          return this.fromData(fileContent)
-        } else {
-          throw new Error('Collection item not found')
-        }
-      })
+
+    if (this.singleFile) {
+      // Single file collections
+      const indexFileName = COLLECTION_GAIA_PREFIX + '/' + COLLECTION_INDEX_FILENAME
+      return getFile(indexFileName, opt, userSession)
+        .then((fileContent) => {
+          if (fileContent) {
+            const indexFile = JSON.parse(fileContent as string)
+            if (indexFile[identifier]) {
+              return this.fromObject(indexFile[identifier])
+            } else {
+              throw new Error('Collection item not found')
+            }
+          } else {
+            throw new Error('Collection item not found')
+          }
+        })
+    } else {
+      // Multi-file collections
+      let normalizedIdentifier = COLLECTION_GAIA_PREFIX + '/' + identifier
+      return getFile(normalizedIdentifier, opt, userSession)
+        .then((fileContent) => {
+          if (fileContent) {
+            return this.fromData(fileContent)
+          } else {
+            throw new Error('Collection item not found')
+          }
+        })
+    }
+
+
   }
 
   /**
@@ -147,19 +184,97 @@ export abstract class Collection implements Serializable {
    */
   static async list(callback: (identifier: string) => boolean, userSession?: UserSession) {
     userSession = userSession || new UserSession()
-    let config = await userSession.getCollectionConfigs(this.collectionName)
-    let hubConfig = config.hubConfig
-    return listFilesLoop(userSession, hubConfig, null, 0, 0, false, (path) => {
-      let collectionGaiaPathPrefix = COLLECTION_GAIA_PREFIX + '/'
-      if (path.startsWith(collectionGaiaPathPrefix)) {
-        // Remove collection/ prefix from file names
-        let identifier = path.substr(collectionGaiaPathPrefix.length)
-        return callback(identifier)
-      } else {
-        // Skip non-collection prefix files
-        return true
-      }
-    })
+    const config = await userSession.getCollectionConfigs(this.collectionName)
+    const hubConfig = config.hubConfig
+    const opt = {
+      gaiaHubConfig: hubConfig,
+      decrypt: config.encryptionKey
+    }
+
+    if (this.singleFile) {
+      // Single file collections
+      const indexFile = COLLECTION_GAIA_PREFIX + '/' + COLLECTION_INDEX_FILENAME
+      return getFile(indexFile, opt, userSession)
+      .then((fileContent) => {
+        if (fileContent) {
+          const indexFile = JSON.parse(fileContent as string)
+          if (indexFile instanceof Object) { 
+            const keys = Object.keys(indexFile)
+            keys.forEach(key => {
+              callback(key)
+            });
+          } else {
+            return 0
+          }
+        } else {
+          return 0
+        }
+      })
+      .catch((error) => {
+        throw new Error('Error listing collection: Could not fetch index file.')
+      })
+    } else {
+      // Multi-file collections
+      return listFilesLoop(userSession, hubConfig, null, 0, 0, false, (path) => {
+        const collectionGaiaPathPrefix = COLLECTION_GAIA_PREFIX + '/'
+        if (path.startsWith(collectionGaiaPathPrefix)) {
+          // Remove collection/ prefix from file names
+          const identifier = path.substr(collectionGaiaPathPrefix.length)
+          return callback(identifier)
+        } else {
+          // Skip non-collection prefix files
+          return true
+        }
+      })
+    }
+  }
+
+  static async deleteCollectionItem(    
+    identifier: string, 
+    hubConfig: GaiaHubConfig, 
+    encryptionKey: string,
+    userSession?: UserSession
+  ) {
+    const getFileOpt = {
+      gaiaHubConfig: hubConfig,
+      decrypt: encryptionKey
+    }
+
+    const putFileOpt = {
+      gaiaHubConfig: hubConfig,
+      encrypt: getPublicKeyFromPrivate(encryptionKey)
+    }
+
+    const indexFileName = COLLECTION_GAIA_PREFIX + '/' + COLLECTION_INDEX_FILENAME
+    return getFile(indexFileName, getFileOpt, userSession)
+      .then((fileContent) => {
+        let newIndexFile
+        if (fileContent) {
+          const indexFile = JSON.parse(fileContent as string)
+          if (indexFile[identifier]) {
+            delete indexFile[identifier]
+            newIndexFile = JSON.stringify(indexFile)
+            return putFile(indexFileName, newIndexFile, putFileOpt, userSession)
+              .then(() => Promise.resolve())
+          } else {
+            throw new Error('Error deleting from collection. Item does not exist.')
+          }
+        } else {
+          throw new Error('Error deleting from collection. Item does not exist.')
+        }
+      })
+  }
+
+  static async deleteCollectionFile(
+    identifier: string, 
+    hubConfig: GaiaHubConfig, 
+    userSession?: UserSession
+  ) {
+    const opt = {
+      gaiaHubConfig: hubConfig
+    }
+    const normalizedIdentifier = COLLECTION_GAIA_PREFIX + '/' + identifier
+    return deleteFile(normalizedIdentifier, opt, userSession)
   }
 
   /**
@@ -171,13 +286,18 @@ export abstract class Collection implements Serializable {
    */
   static async delete(identifier: string, userSession?: UserSession) {
     userSession = userSession || new UserSession()
-    let config = await userSession.getCollectionConfigs(this.collectionName)
-    let hubConfig = config.hubConfig
-    let opt = {
-      gaiaHubConfig: hubConfig
+    const config = await userSession.getCollectionConfigs(this.collectionName)
+    if (this.singleFile) {
+      return this.deleteCollectionItem(identifier, config.hubConfig, config.encryptionKey, userSession)
+    } else {
+      return this.deleteCollectionFile(identifier, config.hubConfig, userSession)
     }
-    const normalizedIdentifier = COLLECTION_GAIA_PREFIX + '/' + identifier
-    return deleteFile(normalizedIdentifier, opt, userSession)
+    
+    // const opt = {
+    //   gaiaHubConfig: config.hubConfig
+    // }
+    // const normalizedIdentifier = COLLECTION_GAIA_PREFIX + '/' + identifier
+    // return deleteFile(normalizedIdentifier, opt, userSession)
   }
 
   /**
@@ -189,19 +309,47 @@ export abstract class Collection implements Serializable {
    */
   async save(userSession?: UserSession) {
     userSession = userSession || new UserSession()
-    let config = await userSession.getCollectionConfigs(this.collectionName())
-    let hubConfig = config.hubConfig
-    let identifier = this.constructIdentifier()
-    this.attrs.identifier = identifier
-    let file = this.serialize()
-    let normalizedIdentifier = COLLECTION_GAIA_PREFIX + '/' + identifier
-    let opt = {
+    const config = await userSession.getCollectionConfigs(this.collectionName())
+    const hubConfig = config.hubConfig
+    const opt = {
       gaiaHubConfig: hubConfig,
       encrypt: getPublicKeyFromPrivate(config.encryptionKey)
     }
-    return putFile(normalizedIdentifier, file, opt, userSession).then(() => {
-      return identifier
-    })
+    const getFileOpt = {
+      gaiaHubConfig: hubConfig,
+      decrypt: config.encryptionKey
+    }
+
+    const identifier = this.constructIdentifier()
+    this.attrs.identifier = identifier
+
+    if (this.singleFile) {
+      // Single file collections
+      const indexFileName = COLLECTION_GAIA_PREFIX + '/' + COLLECTION_INDEX_FILENAME
+      return getFile(indexFileName, getFileOpt, userSession)
+        .then((fileContent) => {
+          let newIndexFile
+          if (fileContent) {
+            // Add to existing index file
+            const indexFile = JSON.parse(fileContent as string)
+            indexFile[identifier] = this.attrs
+            newIndexFile = JSON.stringify(indexFile)
+          } else {
+            // Create new index file
+            newIndexFile = JSON.stringify({ [identifier]: this.attrs })
+          }
+          return putFile(indexFileName, newIndexFile, opt, userSession).then(() => {
+            return identifier
+          })
+        })
+    } else {
+      // Multi-file collections
+      const item = this.serialize()
+      const normalizedIdentifier = COLLECTION_GAIA_PREFIX + '/' + identifier
+      return putFile(normalizedIdentifier, item, opt, userSession).then(() => {
+        return identifier
+      })
+    }
   }
 
   /**
@@ -212,13 +360,27 @@ export abstract class Collection implements Serializable {
    */
   async delete(userSession?: UserSession) {
     userSession = userSession || new UserSession()
-    let config = await userSession.getCollectionConfigs(this.collectionName())
-    let hubConfig = config.hubConfig
-    let opt = {
-      gaiaHubConfig: hubConfig
+    const config = await userSession.getCollectionConfigs(this.collectionName())
+    if (this.singleFile) {
+      return Collection.deleteCollectionItem(
+        this.attrs.identifier, 
+        config.hubConfig, 
+        config.encryptionKey, 
+        userSession
+      )
+    } else {
+      return Collection.deleteCollectionFile(
+        this.attrs.identifier, 
+        config.hubConfig, 
+        userSession
+      )
     }
-    const normalizedIdentifier = COLLECTION_GAIA_PREFIX + '/' + this.attrs.identifier
-    return deleteFile(normalizedIdentifier, opt, userSession)
+
+    // const opt = {
+    //   gaiaHubConfig: hubConfig
+    // }
+    // const normalizedIdentifier = COLLECTION_GAIA_PREFIX + '/' + this.attrs.identifier
+    // return deleteFile(normalizedIdentifier, opt, userSession)
   }
 
   /**

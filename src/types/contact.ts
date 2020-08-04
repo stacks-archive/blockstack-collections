@@ -3,6 +3,8 @@ import { UserSession } from 'blockstack'
 
 export class Contact extends Collection implements Serializable {
 
+  static singleFile = true
+
   static get collectionName(): string {
     return 'contact'
   }
@@ -19,6 +21,10 @@ export class Contact extends Collection implements Serializable {
     organization: String
   }
 
+  static fromObject(object: object) {
+    return new Contact(object)
+  }
+
   static fromData(data: string) {
     return this.fromJSON(data)
   }
@@ -32,6 +38,9 @@ export class Contact extends Collection implements Serializable {
 
   constructor(attrs: Attrs = {}) {
     super(attrs)
+    if (!this.attrs.identifier) {
+      this.attrs.identifier = this.constructIdentifier()
+    }
   }
 
   collectionName(): string {
@@ -57,10 +66,14 @@ export class Contact extends Collection implements Serializable {
     return super.save(userSession)
       .then((result) => {
         if (this.identifierChanged) {
-          Contact.delete(this.previousIdentifier, userSession)
-          this.identifierChanged = false
+          return Contact.delete(this.previousIdentifier, userSession)
+            .then(() => {
+              this.identifierChanged = false
+              return result
+            })
+        } else {
+          return result
         }
-        return result
       })
   }
 
